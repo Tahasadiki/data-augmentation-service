@@ -1,0 +1,16 @@
+sqs:
+  s3_events_queue_url: "https://sqs.{region}.amazonaws.com/{account-id}/{queue-name}"
+  queue_url: "https://sqs.{region}.amazonaws.com/{account-id}/{queue-name}"
+batch_size: 10000
+redis:
+  host: "redis-host"
+  port: 6379
+  db: 0
+  ttl: 31536000  # 365 days in seconds
+grpc:
+  host: "grpc-host"
+  port: 50051
+  rate_limit: 1000
+  batch_size: 1000
+s3:
+  output_bucket: "rl-data"

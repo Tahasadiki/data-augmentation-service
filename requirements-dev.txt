@@ -1,0 +1,4 @@
+black
+pre-commit~=3.3
+bump2version
+pylint
