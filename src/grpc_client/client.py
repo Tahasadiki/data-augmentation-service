@@ -15,21 +15,21 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    def __init__(self, rate_limit):
-        self.rate_limit = rate_limit
-        self.tokens = rate_limit
-        self.last_update = time.time()
+    def __init__(self, requests_per_second: int):
+        self.requests_per_second = requests_per_second
+        self.last_request_time = 0
 
-    def acquire(self):
-        now = time.time()
-        time_passed = now - self.last_update
-        self.tokens = min(self.rate_limit, self.tokens + time_passed * self.rate_limit)
-        self.last_update = now
+    def acquire(self, batch_size: int):
+        current_time = time.time()
+        time_since_last_request = current_time - self.last_request_time
+        required_interval = batch_size / self.requests_per_second
 
-        if self.tokens < 1:
-            return False
-        self.tokens -= 1
-        return True
+        if time_since_last_request < required_interval:
+            wait_time = required_interval - time_since_last_request
+            logger.info(f"Rate limiting: waiting for {wait_time:.2f} seconds")
+            time.sleep(wait_time)
+
+        self.last_request_time = time.time()
 
 
 class GrpcClient:
@@ -48,8 +48,6 @@ class GrpcClient:
 
         for i in range(0, len(pairs), batch_size):
             batch = pairs[i : i + batch_size]
-            while not self.rate_limiter.acquire():
-                time.sleep(0.01)  # Wait for 10ms before trying again
 
             try:
                 request_batch = SeniorityRequestBatch(
@@ -64,6 +62,9 @@ class GrpcClient:
                 for response in response_batch.batch:
                     company, title = batch[response.uuid]
                     results[(company, title)] = response.seniority
+
+                # Apply rate limiting
+                self.rate_limiter.acquire(len(batch))
 
             except grpc.RpcError as e:
                 logger.error(f"RPC failed: {e}")

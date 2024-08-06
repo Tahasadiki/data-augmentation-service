@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import time
 from typing import Dict, List, Tuple
 
 import redis
@@ -30,14 +31,13 @@ class CacheService:
         return json.dumps(
             {
                 "seniority": seniority,
+                "last_updated": int(time.time()),
                 "ttl": self.config.get("ttl", 2592000),  # Default 30 days
             }
         )
 
     def _deserialize_value(self, value: str) -> int:
         """Deserialize the stored value to get the seniority."""
-        if value is None:
-            return None
         return json.loads(value).get("seniority")
 
     def get(self, company: str, title: str) -> int:
